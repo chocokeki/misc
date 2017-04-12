@@ -1,5 +1,7 @@
 /*
-
+	quick sort sample code using stack
+	chocokeki@gmail.com
+	for test 
 
 */
 #include <stdio.h>
@@ -188,8 +190,8 @@ void qs_stack(unsigned char *box, int size)
 {
 	extern struct stack_recursion stack_re;
 	extern const int sz_stack;
-	recs_t 	stage, oldstage;
-	int pivot;
+	recs_t 	stage;
+	int pivot, l_limit_idx, r_limit_idx;
 	
 	stack_init();
 
@@ -197,21 +199,22 @@ void qs_stack(unsigned char *box, int size)
 	stage.r_limit = size -1;
 	
 	do {
-		oldstage = stage;
-		qs_algo(box, stage.l_limit, stage.r_limit, &pivot);
+		l_limit_idx = stage.l_limit;
+		r_limit_idx = stage.r_limit;
+		qs_algo(box, l_limit_idx, r_limit_idx, &pivot);
 
-		pdebug("l%d, r%d, p%d\n", stage.l_limit, stage.r_limit, pivot);
+		pdebug("l%d, r%d, p%d\n", l_limit_idx, r_limit_idx, pivot);
 		
-		if(oldstage.r_limit > (pivot +1)) {
-			pdebug("R: pv%d, %d, %d\n", box[pivot], box[(pivot +1)], box[stage.r_limit]);
+		if(r_limit_idx > (pivot +1)) {
+			pdebug("R: pv%d, %d, %d\n", box[pivot], box[(pivot +1)], box[r_limit_idx]);
 			stage.l_limit = pivot +1;
 			stack_push(stage);
 		}
 
-		if(oldstage.l_limit < (pivot -1)) {
-			stage.l_limit = oldstage.l_limit;
+		if(l_limit_idx < (pivot -1)) {
+			stage.l_limit = l_limit_idx;
 			stage.r_limit = pivot -1;
-			pdebug("L: pv%d, %d, %d\n", box[pivot], box[stage.l_limit], box[(pivot -1)]);
+			pdebug("L: pv%d, %d, %d\n", box[pivot], box[l_limit_idx], box[(pivot -1)]);
 			stack_push(stage);
 		}
 	}while(!stack_pop(&stage));
