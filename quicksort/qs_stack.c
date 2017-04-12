@@ -1,12 +1,11 @@
 /*
-	http://terms.naver.com/entry.nhn?docId=2270444&cid=51173&categoryId=51173
-	quick sort baad code
-	chocokeki@gmail.com
-*/
 
+
+*/
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
+#include "qs_stack.h"
+
 
 #define SHOW_DBG_MSG 0
 
@@ -37,68 +36,15 @@ void show_data(unsigned char *box, int boxsz)
 void swap_data(unsigned char *box, int aidx, int bidx)
 {
 	unsigned char tmp;
+
+	if(aidx == bidx)
+		return ;
 	tmp = *(box + aidx);
 	*(box + aidx) = *(box + bidx);
 	*(box + bidx) = tmp;
 }
 
-int check_exit(int l_limit_idx, int r_limit_idx)
-{
-	return (l_limit_idx >= r_limit_idx) ? 1 : 0;
-}
-
-
-void qs(unsigned char *box, int l_limit_idx, int r_limit_idx)
-{
-	int i, j;
-	int pivot, l_pos, r_pos;
-
-	if(check_exit(l_limit_idx, r_limit_idx))
-		return ;
-
-	pdebug("\t\t\tstart new qs - l_idx:%02d, r_idx:%02d\n", l_limit_idx, r_limit_idx);
-
-	pivot = box[l_limit_idx];
-
-	for(l_pos = l_limit_idx+1, r_pos = r_limit_idx; ; l_pos = i, r_pos = j)
-	{
-		for(i=l_pos; i<=r_limit_idx; i++)
-		{
-			if(box[i] > pivot) {
-				pdebug("\t\t\tl_pos - data:%02d, ith:%02d, pivot:%02d\n", box[i], i, pivot); 
-				break;
-			}
-		}//find left to right(=>>)
-
-		for(j=r_pos; j>=l_limit_idx; j--)
-		{
-			if(box[j] < pivot) {
-				pdebug("\t\t\tr_pos - data:%02d, ith:%02d, pivot:%02d\n", box[j], j, pivot); 
-				break;
-			}
-		}//find right to left(<<=)
-
-		if(i > r_limit_idx)		//check edge - if could not find
-			i = r_limit_idx;
-		if(j < l_limit_idx) 		//check edge - if could not find
-			j = l_limit_idx;
-
-		if(i < j) {
-			swap_data(box, i, j);
-			show_data(box, ARRAY_LENGTH);
-		}
-		else {
-			swap_data(box, j, l_limit_idx);		// j == pivot index
-			show_data(box, ARRAY_LENGTH);
-			break;
-		}
-	}
-
-	qs(box, l_limit_idx, j-1);
-	qs(box, j+1, r_limit_idx);
-}
-
-#define CASESELECT 2
+#define CASESELECT 3 
 void init_data(unsigned char *box, int boxsz)
 {
 #if CASESELECT == 0
@@ -191,14 +137,104 @@ void init_data(unsigned char *box, int boxsz)
 #endif
 }
 
+
+void qs_algo(unsigned char *box, int l_limit, int r_limit, int *new_pivot_idx)
+{
+	int pivot, l_pos, r_pos;
+
+	if(l_limit >= r_limit) {
+		*new_pivot_idx = r_limit;
+		return ;	
+	}
+
+	pivot = box[l_limit];
+	l_pos = l_limit + 1;
+	r_pos = r_limit;
+
+	pdebug("\t\t\tli:%d, ri:%d\n", box[l_limit], box[r_limit]);
+
+	do {
+		while(l_pos < r_limit)
+		{
+			if(box[l_pos] > pivot)
+				break;
+			
+			l_pos++;
+		}
+
+		while(r_pos > l_limit)
+		{
+			if(box[r_pos] < pivot)
+				break;
+
+			r_pos--;
+		}
+
+		if(r_pos > l_pos) {
+			swap_data(box, l_pos, r_pos);
+			show_data(box, ARRAY_LENGTH);
+		}
+		else {
+			swap_data(box, l_limit, r_pos);
+			show_data(box, ARRAY_LENGTH);
+			break;
+		}
+	}while(1);
+
+	*new_pivot_idx = r_pos;
+}
+
+void qs_stack(unsigned char *box, int size)
+{
+	extern struct stack_recursion stack_re;
+	extern const int sz_stack;
+	recs_t 	stage, oldstage;
+	int pivot;
+	
+	stack_init();
+
+	stage.l_limit = 0;
+	stage.r_limit = size -1;
+	
+	do {
+		oldstage = stage;
+		qs_algo(box, stage.l_limit, stage.r_limit, &pivot);
+
+		pdebug("l%d, r%d, p%d\n", stage.l_limit, stage.r_limit, pivot);
+		
+		if(oldstage.r_limit > (pivot +1)) {
+			pdebug("R: pv%d, %d, %d\n", box[pivot], box[(pivot +1)], box[stage.r_limit]);
+			stage.l_limit = pivot +1;
+			stack_push(stage);
+		}
+
+		if(oldstage.l_limit < (pivot -1)) {
+			stage.l_limit = oldstage.l_limit;
+			stage.r_limit = pivot -1;
+			pdebug("L: pv%d, %d, %d\n", box[pivot], box[stage.l_limit], box[(pivot -1)]);
+			stack_push(stage);
+		}
+	}while(!stack_pop(&stage));
+
+	stack_exit();
+}
+
+
 int main()
 {
 	srand(time(NULL));
 
 	init_data(stuff_box, ARRAY_LENGTH);
+	printf("start\n");
 	show_data(stuff_box, ARRAY_LENGTH);
 	
-	qs(stuff_box, 0, ARRAY_LENGTH-1);
+	printf("\nprogress\n"); int j;
+#if 0
+	qs_algo(stuff_box, 0, 19, &j);
+#else
+	qs_stack(stuff_box, ARRAY_LENGTH);	
+#endif
+	printf("\nend\n");
 	show_data(stuff_box, ARRAY_LENGTH);
 
 	return 0;
